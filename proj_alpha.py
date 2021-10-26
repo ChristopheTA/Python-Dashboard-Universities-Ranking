@@ -1,4 +1,7 @@
 import pandas as pd
+import numpy as np
+import json
+import branca
 from os import makedirs
 from dash.dcc.Interval import Interval
 import plotly_express as px
@@ -13,39 +16,81 @@ import folium
 
 df1= pd.read_csv('Data_Projet/country-coordinates-world.csv',na_values=["-"])
 df2= pd.read_csv('Data_Projet/timesData.csv', na_values=["-"])
-
+df3= pd.read_csv('Data_Projet/continent.csv', na_values=["NaN"])
 df1= df1.rename(columns = {"Country" : "country"})
+df3= df3.rename(columns = {"name" : "country","region":"continent"})
+df3=df3[["country","continent"]]
+data_ext=pd.merge(df1,df3)
+full_data=pd.merge(data_ext,df2)
 
-data_proj=pd.merge(df1,df2)
-data_proj=data_proj
-
-dfc = data_proj.groupby(by = ["country"])["country"].count().to_frame("count")
+dfc = full_data.groupby(by = ["country"])["country"].count().to_frame("count")
 #print(dfc)
-col=list(data_proj.columns)
-col_names=col[5:10]
-teaching=data_proj[col[5]]
-international=data_proj[col[6]]
-research=data_proj[col[7]]
-citations=data_proj[col[8]]
-income=data_proj[col[9]]
-type_proj=[teaching, international, research, citations, income]
-
+dfc_count=dfc.values.tolist()
+col=list(full_data.columns)
+col_dfc=list(dfc)
+col_histo=col[6:12]
+col_map=[]
+#col_map[0]="count"
+col_map[1:]=col[12:16]
 info="teaching"
- #data_proj["latitude"],data_proj["longitude"]
-coords=(46.539758, 2.430331)
-my_map = folium.Map(location=coords,tiles='OpenStreetMap', zoom_start=6)
-my_map.save('map_alpha.html')
-year=2011
-years=data_proj["year"].unique()
-data_year={ year:data_proj.query("year == @year") for year in years}
 
+year=2011
+years=full_data["year"].unique()
+data_year={ year:full_data.query("year == @year") for year in years}
+
+coords=(46.539758, 2.430331)
+map = folium.Map(location=coords,tiles='OpenStreetMap', zoom_start=6)
+#map.save('map_alpha.html')
+country_location=full_data[["latitude","longitude","country"]]
+
+
+country_location=full_data[["latitude","longitude","country"]].drop_duplicates()
+dfc=full_data.groupby(by = ["country"])["country"].count().to_frame("count")
+df_count=list(dfc["count"])
+country_location["count"]=(df_count)
+
+
+full_data["num_students"]=full_data["num_students"].str.replace(',','.')
+full_data["num_students"]=full_data['num_students'].astype("float64")
+df_num=full_data.groupby(by = ["country"])['num_students'].sum().to_frame("num_students")
+list_num=list(df_num["num_students"])
+country_location['num_students']=list_num
+
+
+with open("Data_Projet/countries.geojson") as f:
+    data_country=json.load(f)
+
+folium.Choropleth(
+    geo_data=data_country,
+    data=country_location,
+    columns=["country", "num_students"],
+    key_on="feature.properties.ADMIN",
+    fill_color="YlOrRd", 
+    fill_opacity=0.7,
+    line_opacity=0.5,
+    legend_name="Repartition of Universities",
+    #reset=True,
+    nan_fill_color='White'
+).add_to(map)
+map.save(outfile='map_beta.html')
 
 
 if __name__ == '__main__':
 
     app = dash.Dash(__name__) # (3)
 
-    fig = px.histogram(data_year[year],x='teaching') # (4)
+    fig = px.histogram(
+        data_year[year],
+        x='teaching',
+        color='continent',
+        color_discrete_map={ # replaces default color mapping by value
+            "Oceania": "red",
+            "Europe": "green",
+            "Asia": "blue",
+            "Africa": "goldenrod", 
+            "Americas": "magenta"
+            },
+        nbins=40) # (4)
 
 
     app.layout = html.Div(children=[
@@ -56,9 +101,9 @@ if __name__ == '__main__':
                             
                             dcc.Dropdown(
                                 id="type-dropdown",
-                                options=[ {'label': i, 'value': i} for i in col_names
+                                options=[ {'label': i, 'value': i} for i in col_histo
                                    ],
-                                value=col_names[0],
+                                value=col_histo[0],
                             ),
 
                             html.Label('Year'),
@@ -95,8 +140,16 @@ if __name__ == '__main__':
                             ),
                             html.Div(id='button'),
 
+                            dcc.RadioItems(
+                                id='map-value',
+                                options = [{'label': i, 'value': i} for i in col_map
+                                   ],
+                                   value=col_map[0],
+                                   labelStyle={"display":'inline-block'}
+                            ),
+
                             html.H2('World Map Alpha'),
-                            html.Iframe(id='map', srcDoc=open('map_alpha.html','r').read(),width='100%',height='500'),
+                            html.Iframe(id='map', srcDoc=open('map_beta.html','r').read(),width='80%',height='500'),
                             
                             dcc.Interval(id='interval',
                                 interval=2*1000, # in milliseconds
@@ -113,10 +166,18 @@ if __name__ == '__main__':
     )
     
 def update_figure(year, type): # (3)
-    if type==True:
-        return px.histogram(data_year[year[0]],x=type, nbins=20)
-    else:
-        return px.histogram(data_year[year],x=type, nbins=20)
+    return px.histogram(
+        data_year[year],
+        x=type,
+        color='continent',
+        color_discrete_map={ # replaces default color mapping by value
+            "Oceania": "red",
+            "Europe": "green",
+            "Asia": "blue",
+            "Africa": "goldenrod", 
+            "Americas": "magenta"
+            },
+        nbins=40)
 
 
 @app.callback(
@@ -153,85 +214,22 @@ def update_status(Play,Pause):
 
 
 
-"""
-html.Label('Year'),
-                            
-dcc.Slider(
-                    id="type-proj",
-                    marks={
-                        te:{'label': '1952'},#, 'value': 1952},
-                        1957:{'label': '1957'},#, 'value': 1957},
-                        1962:{'label': '1962'},#, 'value': 1962},
-                        1967:{'label': '1967'},#, 'value': 1967},
-                        1972:{'label': '1972'},#, 'value': 1972},
-                        1977:{'label': '1977'},#, 'value': 1977},
-                        1982:{'label': '1982'},#, 'value': 1982},
-                        1987:{'label': '1987'},#, 'value': 1987},
-                        1992:{'label': '1992'},#, 'value': 1992},
-                        1997:{'label': '1997'},#, 'value': 1997},
-                        2002:{'label': '2002'},#, 'value': 2002},
-                        2007:{'label': '2007'},#, 'value': 2007},
-                    },
-                    value=1952,
-                ),                 
-
-dcc.Slider(
-                                id="type_proj",
-                                marks={
-                                    'teaching':{'label': 'teaching'},
-                                    'international':{'label': 'international'},
-                                    'research':{'label': 'research'},
-                                    'citations':{'label': 'citations'},
-                                    'income':{'label': 'income'},
-                                },
-                                value='teaching',
-                            ),           
-
-
-                             {'label': 'teaching', 'value': col_names[0]},
-                                    {'label': 'international', 'value': col_names[1]},
-                                    {'label': 'research', 'value': col_names[2]},
-                                    {'label': 'citations', 'value': col_names[3]},
-                                    {'label': 'income', 'value': col_names[4]},
-                                      
-
-
-
-
-html.Div(children=f'''
-                                The graph above shows relationship between life expectancy and
-                                GDP per capita for year {year}. Each continent data has its own
-                                colour and symbol size is proportionnal to country population.
-                                Mouse over for details.
-                            '''), # (7)
-
-html.Label('Year'),
-                            
-dcc.Slider(
-    id="year-slider",
-    min=2011,
-    max=2016,
-    marks={
-        2011:{'label': '2011'},#, 'value': 1952},
-        2012:{'label': '2012'},#, 'value': 1957},
-        2013:{'label': '2013'},#, 'value': 1962},
-        2014:{'label': '2014'},#, 'value': 1967},
-        2015:{'label': '2015'},#, 'value': 1972},
-        2016:{'label': '2016'},#, 'value': 1977},
-    },
-    value=2011,
-),
-
-
-@app.callback(
-    Output(component_id='graph1', component_property='figure'), # (1)
-    [Input(component_id='year-slider', component_property='value')] # (2)
-)
-    
-def update_figure(input_value): # (3)
-    return px.scatter(type_proj[input_value], x=input_value,nbins=20) # (4)
-
-"""
-
 
 app.run_server(debug=True)
+
+
+"""
+def map_country_locations():
+    for i,loc_info in country_location.iterrows():
+
+        folium.CircleMarker(
+                location = (loc_info["latitude"], loc_info["longitude"]),
+                radius = np.power(loc_info['count'], 1/2),
+                color = 'crimson',
+                fill= True,
+                fill_color= 'crimson'
+            ).add_to(map)
+            
+            #country_map=map_country_locations()
+            
+            """
