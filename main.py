@@ -4,6 +4,7 @@ authors:
     Christophe TA : christophe.ta@edu.esiee.fr
 
 """
+import os
 import json
 import dash
 import folium
@@ -18,6 +19,12 @@ from dash import dcc
 from dash import html
 
 if __name__ == '__main__':
+
+
+    GIT_LINK = os.environ.get(
+    "GIT_LINK",
+    "https://git.esiee.fr/duongh/python-pour-la-data-science",
+)
 
     """
     Instanciation des fichiers à lire et test d'exception :
@@ -147,19 +154,36 @@ if __name__ == '__main__':
 
     """
 
-    app = dash.Dash(__name__) 
+    app = dash.Dash(__name__)
+    #app = dash.Dash(external_stylesheets=[dbc.themes.SIMPLEX]) 
 
     app.layout = html.Div(children=[
         html.H1(id = "titre", children='World University Rankings (from 2011 to 2016)',
-                    style={'textAlign': 'center', 'color': '#7FDBFF'}), # Titre principal de la page
+                    style={'textAlign': 'center', 'color': '#335CFF'}), # Titre principal de la page
 
-        html.Img(src=app.get_asset_url('ESIEE.png'),width='20%',height='80'),
+        html.Div(children=[
+            
+            html.Img(src=app.get_asset_url('ESIEE.png'),width='20%',height='100'),
+
+            dcc.Link(
+                html.Button("View on Git"),
+                href=GIT_LINK,
+                target="_blank",
+                style={'textAlign': 'center','width': '300%'},
+                className = "header__button",
+            ),
+
+            html.H2(children=('Hoang-Duc DUONG',html.Br(),'Christophe TA'),
+                    style={'textAlign': 'right','width': '100%'}),
+
+        ],style=dict(display='flex')),
 
         dcc.Tabs([
 
             dcc.Tab(label='Diagram and Ranking', children=[
 
-                html.H2(id='titre_diagram', children=f'World Ranking Universities Diagramm ({second} depending on {first})'),
+                html.H2(id='titre_diagram', children=f'World Ranking Universities Diagram ({second} depending on {first})',
+                style={'color': '#335CFF'}),
 
                 html.Div(children=[
                     html.Label("X",style=dict(width='5%')),
@@ -202,7 +226,7 @@ if __name__ == '__main__':
 
                     dcc.Graph(
                         id='diagram',
-                        style=dict(width='50%')
+                        style=dict(width='50%', height='100%'),
                     ), # (6)
 
                     dash_table.DataTable(
@@ -210,7 +234,7 @@ if __name__ == '__main__':
                         data=tab_year[year].to_dict('records'),
                         columns=[{'id': c, 'name': c} for c in df_tab.columns.drop(['year'])],
                         style_cell={
-                            'height': 'auto',
+                            'height': '45px',
                             # all three widths are needed
                             'minWidth': '200px', 'width': '200px', 'maxWidth': '200px',
                             'whiteSpace': 'normal'
@@ -222,7 +246,8 @@ if __name__ == '__main__':
             dcc.Tab(label='Histogram', children=[    
 
 
-                html.H2(id='titre_histo', children=f'World Ranking Universities Histogramm ({first} Rating)'), # 1ère partie du Dashboard : données de l'histogramme
+                html.H2(id='titre_histo', children=f'World Ranking Universities Histogramm ({first} Rating)',
+                        style={'color': '#335CFF'}), # 1ère partie du Dashboard : données de l'histogramme
 
                 html.Label("Type"),
 
@@ -278,7 +303,7 @@ if __name__ == '__main__':
 
             dcc.Tab(label='World Map', children=[
 
-                html.H2(id='titre_map', children = 'Universities World Map'), # 2nd partie du Dashboard : données de la World Map 
+                html.H2(id='titre_map', children = 'Universities World Map',style={'color': '#335CFF'}), # 2nd partie du Dashboard : données de la World Map 
 
                 html.Label('Type'),
 
@@ -326,9 +351,9 @@ if __name__ == '__main__':
         Input(component_id='year-diagram', component_property='value'),] 
     ) # Appel des données de l'histogramme et des valeurs qui le modifient : l'année et le type de valeurs
     
-def update_diagram(x, y,year):
+def update_diagram(x, y, year):
     """
-    Retourne le diagramme en fonction des arguments en paramètre
+    Retourne le diagramme et tableau en fonction des arguments en paramètre
 
     Args:
         x : valeur choisie en abscisse
@@ -352,6 +377,7 @@ def update_diagram(x, y,year):
         x=x, # type de données voulues en abscisse
         y=y,
         color='continent',
+        symbol='continent',
         color_discrete_map={ # attribue des couleurs fixes au continent
             "Oceania": "red",
             "Europe": "green",
