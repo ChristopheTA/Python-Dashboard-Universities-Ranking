@@ -7,6 +7,7 @@ Le dataset de départ comporte des notes des écoles sur plusieurs années conce
 
 Toutes ces informations nous amènent à répondre à la problematique suivante : `Comment est l'état de la Haute Education dans le monde ?`
 
+
 # INSTALLATION ET UTILISATION DES FICHIERS
 
 ## Installation de Git et récupération des fichiers
@@ -23,13 +24,11 @@ Finalement, tapez la commande `git pull` et vous aurez à votre disposition tous
 
 Voici l'inventaire des fichiers présents dans notre projet :
 - le fichier [`main.py`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/blob/master/main.py) qui sera la base de notre étude et l'ensemble des données affichés.
-- le dossier `Data_Projet` contenant le [dataset](https://www.kaggle.com/mylesoneill/world-university-rankings?=select=timesData.csv) (jeux de données) au format `csv`, un fichier [continents2](https://www.kaggle.com/andradaolteanu/country-mapping-iso-continent-region) ainsi qu'un fichier [`GeoJSON`](https://datahub.io/core/geo-countries#resource-countries) pour la représentation géographique.
+- le dossier [`Data_Projet`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/tree/master/Data_Projet) contenant le [dataset](https://www.kaggle.com/mylesoneill/world-university-rankings?=select=timesData.csv) (jeux de données) au format `csv`, un fichier [continents2](https://www.kaggle.com/andradaolteanu/country-mapping-iso-continent-region) ainsi qu'un fichier [`GeoJSON`](https://datahub.io/core/geo-countries#resource-countries) pour la représentation géographique.
 - le fichier [`requirement.txt`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/blob/master/requirements.txt) contenant tous les packages nécessaires au bon fonctionnement du Dashboard.
 - le fichier [`get_data.py`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/blob/master/get_data.py) vous donnant les fichiers à leurs sources si ils sont corrompus localement
-- le fichier `kaggle.json` contenant les authentifications d'un administrateur (ici l'un de nos identifiants confidentiels svp :) )
+- le fichier [`kaggle.json`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/blob/master/kaggle.json) contenant les authentifications d'un administrateur (ici l'un de nos identifiants confidentiels svp :) )
 - le dossier [`assets`](https://git.esiee.fr/duongh/python-pour-la-data-science/-/tree/master/assets) pour l'image de la page (représentant notre école :) ).
-
-
 
 
 # USER'S GUIDE
@@ -102,9 +101,9 @@ Nous avons utilisé la structure classique d'un fichier HTML en travaillant les 
 
 Une fois l'esthétique de la page faite, il faut maintenant la remplir d'information. Dash dispose d'une fonctionnalité pemettrant de rappeler les élements de la page et de leur fournir des informations en fonction des valeurs qu'on donnera en entrée. 
 
-Nous allons nous interesser au premier et troisième onglet qui ont un nombre conséquent `d'input_values` pour gérer les affichages graphiques.
+Nous allons nous intéresser au premier et troisième onglet qui ont un nombre conséquent `d'input_values` pour gérer les affichages graphiques.
 
-Comme on l'a vu dans le User's Guide, le premier onglet contient un diagramme et un tableau de classement. Le diagramme comme on a pu le tester, a une possibilité de 3 entries possibles: l'abscisse, l'ordonnée et l'année, tandis que le tableau n'en a qu'une seule: l'année. 
+Comme on l'a vu dans le User's Guide, le premier onglet contient un graphe et un tableau de classement. Le graphe comme on a pu le tester, a une possibilité de 3 entries possibles: l'abscisse, l'ordonnée et l'année, tandis que le tableau n'en a qu'une seule: l'année. 
 
 On va donc callback l'id de la liste déroulante de x et y, ainsi que les sliders de l'année et pays. 
 On utilise la méthode query pour définir une data_year qui va sélectionner les données en fonction de l'année et on prend les input_values pour tracer le graphe. On pourra préciser le pays en filtrant la dataframe. Les variables et fonctions du tableau étant déjà faites en global, on a plus qu'a retourner sa valeur en précisant l'année en input_value et en affichant seulement les 10 premières lignes triées pour en faire un Top 10. 
@@ -114,21 +113,29 @@ On répète le même processus, on va query l'année dans la sous-dataframe et n
 
 Pour tracer les pays sur la map, on a besoin de l'aide d'un fichier GeoJSON nommé `data_country` contenant l'ensemble des coordonnées et de leur contour. Il faut rechercher dans ce fichier l'expression en question similaire à notre colonne 'country' pour matcher les contours, ces données se trouvant dans le chemin `properties.ADMIN`. En y ajoutant les autres paramètres notamment la gamme de couleurs d'intensité des valeurs, on retourne ces informations dans un fichier `map.html`, qui sera lancé par la fonction Iframe de la page HTML.
 
+## Exploration et pistes de recherches
+
+Nous avons plusieurs pistes d'amélioration pour notre code.
+Dans un premier temps, nous pensons qu'il serait intéressant de pouvoir se focaliser sur les États-Unis, pays qui rassemble les meilleures universités du monde. On pourrait alors voir la répartition de ces universités entre chaque état, et observer les divergences dans le pays lui-même.
+Nous pensons aussi qu'utiliser les autres datasets des autres instituts serait pertinent. On pourrait par exemple fusionner les datasets pour obtenir plus de données d'universités, ou alors comparer ces datasets pour distinguer les différences dans les critères de notation.
+
 # RAPPORT D'ANALYSE
 
-Analysons et interpretons les données dans leur ensemble pour répondre à la problématique. On sait que d'après les données que nous voyons et de manière générale, les universités Américaines monopolisent le classement comme on peut le voir au niveau du tableau Top 10 au fil des années (jusqu'en 2016).
+Analysons et interprétons les données dans leur ensemble pour répondre à la problématique. On sait que d'après les données que nous voyons et de manière générale, les universités Américaines monopolisent le classement comme on peut le voir au niveau du tableau Top 10 au fil des années (jusqu'en 2016).
 
-Interessons-nous plus au valeur données par le Scatterplot() sur différents critères. Est-ce que les meilleures écoles en général dominent vraiment sur tous les critères ? 
+Intéressons-nous plus au valeur données par le Graphe sur différents critères. Est-ce que les meilleures écoles en général dominent vraiment sur tous les critères ? 
 
-La réponse est à première vue non, puisque si par exemple on veut tracer le score total en fonction du pourcentage d'étudiants à l'internationaux, on remarque que c'est plutôt les pays d'Europe qui ont certes un score total un peu moins élevé mais une répartition d'étudiants étrangers un peu plus égale pouvant aller jusqu'à `50 %` d'étudiants étrangers contre maximum `35 %` d'étudiants internationaux dans les universités américaines, ce qui montre bien que l'éducation aux Etats-Unis restent tout de même un privilège pas accessible à tout le monde. C'est pourquoi que sur le critère `International`, l'Europe a en moyenne de meilleurs résultats.
+La réponse est à première vue non, puisque si par exemple on veut tracer le score total en fonction du pourcentage d'étudiants à l'international, on remarque que c'est plutôt les pays d'Europe qui ont certes un score total un peu moins élevé mais une répartition d'étudiants étrangers un peu plus égale pouvant aller jusqu'à 50 % d'étudiants étrangers contre maximum 35 % d'étudiants internationaux dans les universités américaines, ce qui montre bien que l'éducation aux Etats-Unis restent tout de même un privilège pas accessible à tout le monde. C'est pourquoi sur le critère `International`, l'Europe a en moyenne de meilleurs résultats.
 
-Pour le reste des critères numériques à savoir l'éducation, la recherche, les citations et les revenus, les universités d'Amérique du Nord ont de meilleurs résultats en moyenne, suivi de l'Europe, l'Asie, l'Océanie et l'Afrique, ce qui se voit en détails sur le tableau des 10 meilleures universités de chaque année, avec les Etats-Unis et le Royaume-Uni se partageant `majoritairement` les places.  
+Pour le reste des critères numériques à savoir l'enseignement, la recherche, les citations et les revenus, les universités d'Amérique du Nord ont de meilleurs résultats en moyenne, suivi de l'Europe, l'Asie, l'Océanie et l'Afrique, ce qui se voit en détail sur le tableau des 10 meilleures universités de chaque année, avec les Etats-Unis et le Royaume-Uni se partageant majoritairement les places.  
 
 Bien que les nombres jouent en faveur des pays Anglosaxons, on peut voir que cela reste tout de même juste un échantillon du reste des universités. On peut voir sur la deuxième représentation graphique un histogramme des valeurs numériques en globalité et le résultat montre que chaque critère a une moyenne de scores importante entre 20 et 40 sur l'ensemble des universités, montrant bien la notation pointue des critères de l'institut THE. 
 
-Qu'en-est-il de la représentation géographique et comment faire la relation avec les scores obtenus ? On constate que les nombres jouent en la faveur des Etats-Unis avec un nombre conséquent d'universités et de nombres d'étudiants dans le haut du classement. 
+Analysons maintenant ces valeurs et cherchons si certaines d'entre elles sont liées en changeant les variables sur les axes du graphique et en observant si cela forme une régression. On constate que hormis entre la note de l'international et le taux d'elèves internationaux, et la note d'enseignement et le score total, très peu de données corellent entre elles, ce qui montre l'impact du taux d'enseignement dans la notation du score total de chaque université.    
 
-Si maintenant on s'interesse aux valeurs de ratio, on constate que dans les pays où les universités sont bien classées ayant les plus hauts `Total Score`, ont un `Student / Staff Ratio` assez bas, ce qui signifie qu'un intervenant va gérer un nombre d'élève assez bas, ce qui peut expliquer une meilleure méthode et donc de meilleurs résultats. 
+Qu'en est-il de la représentation géographique et comment faire la relation avec les scores obtenus ? On constate que les nombres jouent en la faveur des Etats-Unis avec un nombre conséquent d'universités et de nombres d'étudiants dans le haut du classement. 
+
+Si maintenant on s'intéresse aux valeurs de ratio, on constate que dans les pays où les universités sont bien classées ayant les plus hauts `Total Score`, ont un `Student / Staff Ratio` assez bas, ce qui signifie qu'un intervenant va gérer un nombre d'élève assez bas, ce qui peut expliquer une meilleure méthode et donc de meilleurs résultats. 
 
 Le critère `International Students` comme vu précédemment présente des résultats assez homogènes au fil des années, avec en tête de valeurs la Russie et l'Australie aux alentours des 40 % en moyenne.   
 Le dernier ratio `Female / Male Ratio` montre avec 'surprise' que la haute éducation a une forte tendance féminine en majorité sur tout le globe sur toutes les années. 
