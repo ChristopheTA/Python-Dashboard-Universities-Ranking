@@ -3,3 +3,5 @@ numpy
 dash
 folium
 kaggle
+plotly
+plotly_express
