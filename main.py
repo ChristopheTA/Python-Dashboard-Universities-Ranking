@@ -18,16 +18,17 @@ from dash import dash_table
 from dash import dcc
 from dash import html
 
+
 if __name__ == '__main__':
 
 
     GIT_LINK = os.environ.get(
     "GIT_LINK",
     "https://git.esiee.fr/duongh/python-pour-la-data-science",
-)
+    )
 
     """
-    Instanciation des fichiers à lire et test d'exception :
+    Instanciation des fichiers à lire et testss d'exception :
 
     Args:
         Fichiers dans le dossier Data_Projet/ avec précision des NaN values
@@ -44,9 +45,9 @@ if __name__ == '__main__':
         quit()
 
     try:
-        df2= pd.read_csv('Data_Projet/continent.csv', na_values=["NaN",""])
+        df2= pd.read_csv('Data_Projet/continents2.csv', na_values=["NaN",""])
     except:
-        print("Data_Projet/continent.csv not found")
+        print("Data_Projet/continents2.csv not found")
         quit()
 
     try:
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     except:
         print('Data_Projet/countries.geojson not found')
         quit()
-
+    
     """
     Modification des fichiers pour les adapter aux variables du projet
 
@@ -64,6 +65,10 @@ if __name__ == '__main__':
         2nd arg : Nom qui remplace la variable  
     
     Fonction merge() : assemble les deux fichiers passés en paramètre
+
+    Commande str.replace() : 
+        1st arg : String par défaut
+        2nd arg : Nouvelle String 
 
     """
 
@@ -78,7 +83,8 @@ if __name__ == '__main__':
     Modification de certains noms de valeurs pour l'adapter au fichier GeoJSON
 
     """
-    df1["country"]=df1['country'].str.replace('Hong Kong', 'Hong Kong S.A.R')
+
+    df1["country"]=df1['country'].str.replace('Hong Kong', 'Hong Kong S.A.R.')
     df1["country"]=df1['country'].str.replace('Macau', 'Macao S.A.R')
     df1["country"]=df1['country'].str.replace('Serbia', 'Republic of Serbia ')
     df1["country"]=df1['country'].str.replace('Russian Federation', 'Russia')
@@ -87,8 +93,15 @@ if __name__ == '__main__':
     df1["country"]=df1['country'].str.replace('Unted Kingdom', 'United Kingdom')
 
     df2= df2.rename(columns = {"name" : "country","region":"continent"}) # on renomme ici le 3ème fichier pour matcher la similitude avec le 1er fichier
-    df2=df2[["country","continent"]] # on n'extrait que les colonnes utiles du fichier
-    full_data=pd.merge(df2,df1)
+
+    df2["country"]=df2['country'].str.replace('Hong Kong', 'Hong Kong S.A.R.')
+    df2["country"]=df2['country'].str.replace('Macao', 'Macao S.A.R')
+    df2["country"]=df2['country'].str.replace('Serbia', 'Republic of Serbia ')
+    df2["country"]=df2['country'].str.replace('United States', 'United States of America')
+
+    df2=df2[["country","continent"]] # on n'extrait que les colonnes utiles du fichier    
+
+    full_data=pd.merge(df2,df1) # NOTRE DATAFRAME FINALE AVEC TOUTES LES INFORMATIONS QUE L'ON VA ÉTUDIER
 
     """
     Création de variables globales utilisées dans la suite du projet       
@@ -98,16 +111,21 @@ if __name__ == '__main__':
     map = folium.Map(location=coords,tiles='OpenStreetMap', zoom_start=1.5) #génération de la map du Dashboard
     map.save(outfile='map.html')
 
+    """
+    Données du premier onglet
+
+    """
+
     full_data['World Rank']=full_data['World Rank'].str.replace("=",'').str.replace("-",".").astype("float64").apply(np.trunc)#modifie pour un format de classement
     df_tab=full_data[["World Rank","University's Name",'country','year','Total Score']]
-    df_tab=df_tab.sort_values("World Rank").head(60)#on prend ici les 60 premières cases du tableau (5 pour le nom des colonnes + 5*10 pour les données)
+    df_tab=df_tab.sort_values("World Rank")#on trie le tableau en fonction du classement mondial
 
     years_tab=df_tab["year"].unique()
     tab_year={ year:df_tab.query("year == @year") for year in years_tab} # instancie une sous-dataframe ayant en entrée l'année choisie
     year=2011
 
     """
-    Instanciation des colonnes utilisées pour les données du diagramme, de l'histogramme et de la map
+    Instanciation des colonnes utilisées pour les données du graphe, de l'histogramme et de la map
 
     """
     dfc = full_data.groupby(by = ["country"])["country"].count().to_frame("Number of Universities") #création d'une nouvelle colonne de données
@@ -124,30 +142,26 @@ if __name__ == '__main__':
 
     """
 
+    first_map='Number of Universities'
     df_map=full_data[["country","year"]].drop_duplicates() # sous-Dataframe sans duplicat pour avoir une dimension conforme
     count=full_data.groupby(by = ["country","year"])["country"].count().to_frame("count") # regroupe les pays en fonction des pays et de l'année
-    list_count=list(count["count"]) # conversion des données en liste
-    df_map['Number of Universities']=list_count # ajout dans la dataframe 
+    df_map['Number of Universities']=list(count["count"]) # conversion des données en liste et ajout dans la dataframe 
     
     full_data["Number of Students"]=full_data["Number of Students"].str.replace(',','.').astype("float64") # Adapte la valeur en format de nombre
     num_students=full_data.groupby(by = ["country","year"])['Number of Students'].sum().to_frame("Number of Students")
-    list_students=list(num_students["Number of Students"])
-    df_map['Number of Students']=list_students
+    df_map['Number of Students']=list(num_students["Number of Students"])
 
     full_data["Student / Staff Ratio"]=full_data['Student / Staff Ratio'].astype("float64")
     stu_sta_ratio=full_data.groupby(by = ["country","year"])['Student / Staff Ratio'].mean().to_frame("Student / Staff Ratio")
-    list_stu_sta=list(stu_sta_ratio["Student / Staff Ratio"])
-    df_map['Student / Staff Ratio']=list_stu_sta
+    df_map['Student / Staff Ratio']=list(stu_sta_ratio["Student / Staff Ratio"])
 
     full_data["Female / Male Ratio"]=full_data["Female / Male Ratio"].str.replace(" : ",".").astype("float64").apply(np.trunc)# Valeur du ratio avant le point 
     female_male_ratio=full_data.groupby(by = ["country","year"])['Female / Male Ratio'].mean().to_frame("Female / Male Ratio")
-    list_fml=list(female_male_ratio["Female / Male Ratio"])
-    df_map['Female / Male Ratio']=list_fml
+    df_map['Female / Male Ratio']=list(female_male_ratio["Female / Male Ratio"])
 
     full_data['International Students']=full_data['International Students'].str.replace("%","").astype('float64')
     inter_stu=full_data.groupby(by = ["country","year"])['International Students'].mean().to_frame("International Students")
-    list_inter=list(inter_stu["International Students"])
-    df_map['International Students']=list_inter
+    df_map['International Students']=list(inter_stu["International Students"])
 
     """
     Initialisation de la page du Dashboard
@@ -155,7 +169,6 @@ if __name__ == '__main__':
     """
 
     app = dash.Dash(__name__)
-    #app = dash.Dash(external_stylesheets=[dbc.themes.SIMPLEX]) 
 
     app.layout = html.Div(children=[
         html.H1(id = "titre", children='World University Rankings (from 2011 to 2016)',
@@ -163,7 +176,7 @@ if __name__ == '__main__':
 
         html.Div(children=[
             
-            html.Img(src=app.get_asset_url('ESIEE.png'),width='20%',height='100'),
+            html.Img(src=app.get_asset_url('ESIEE.png'),width='20%',height='100',style={'padding' : 10}),#image du Dashboard
 
             dcc.Link(
                 html.Button("View on Git"),
@@ -171,19 +184,19 @@ if __name__ == '__main__':
                 target="_blank",
                 style={'textAlign': 'center','width': '300%'},
                 className = "header__button",
-            ),
+            ),#Bouton Link donnant vers notre repository
 
             html.H2(children=('Hoang-Duc DUONG',html.Br(),'Christophe TA'),
-                    style={'textAlign': 'right','width': '100%'}),
+                    style={'textAlign': 'right','width': '100%', 'padding':10}),
 
         ],style=dict(display='flex')),
 
         dcc.Tabs([
 
-            dcc.Tab(label='Diagram and Ranking', children=[
+            dcc.Tab(label='Graph and Ranking', children=[
 
-                html.H2(id='titre_diagram', children=f'World Ranking Universities Diagram ({second} depending on {first})',
-                style={'color': '#335CFF'}),
+                html.H2(id='titre_graph', children=f'World Ranking Universities Graph ({second} depending on {first})',
+                style={'color': '#335CFF'}),#1ère Partie du DashBoard
 
                 html.Div(children=[
                     html.Label("X",style=dict(width='5%')),
@@ -194,7 +207,7 @@ if __name__ == '__main__':
                             ],
                         value=col_diagram[0],
                         style=dict(width='50%')
-                    ), # Liste déroulante des valeurs d'abscisse du diagramme
+                    ), # Liste déroulante des valeurs d'abscisse du graphique
 
                     html.Label("Y",style=dict(width='5%')),         
                 
@@ -205,10 +218,21 @@ if __name__ == '__main__':
                         value=col_diagram[1],
                         style=dict(width='50%')
                     ), # Liste déroulante des valeurs d'ordonnée du diagramme
+
+                    html.Label("Choose a specific country:",style=dict(width='20%')),
+
+                    dcc.Dropdown(
+                        id="type_country-dropdown",
+                        options=[ {'label': i, 'value': i} for i in list(full_data["country"].drop_duplicates())
+                            ],
+                        value=None,
+                        style=dict(width='50%')
+                    ), # Liste déroulante des valeurs d'abscisse du graphique
+
                 ],style=dict(display='flex')),
 
                 dcc.Slider(
-                        id="year-diagram",
+                        id="year-graph",
                         min=2011,
                         max=2016,
                         marks={
@@ -220,12 +244,12 @@ if __name__ == '__main__':
                             2016:{'label': '2016'}
                         },
                         value=2011,
-                ), # Années des données du diagramme et du tableau
+                ), # Années des données du graphique et du tableau
 
                 html.Div(children=[
 
                     dcc.Graph(
-                        id='diagram',
+                        id='graph',
                         style=dict(width='50%', height='100%'),
                     ), # (6)
 
@@ -245,20 +269,32 @@ if __name__ == '__main__':
 
             dcc.Tab(label='Histogram', children=[    
 
-
                 html.H2(id='titre_histo', children=f'World Ranking Universities Histogramm ({first} Rating)',
-                        style={'color': '#335CFF'}), # 1ère partie du Dashboard : données de l'histogramme
-
-                html.Label("Type"),
+                        style={'color': '#335CFF'}), # 2nde partie du Dashboard : données de l'histogramme
 
                 html.Div(children=[
-                    dcc.Dropdown(
-                        id="type-dropdown",
-                        options=[ {'label': i, 'value': i} for i in col_histo
-                            ],
-                        value=col_histo[0],
-                        style=dict(width='50%')
-                    ), # Liste déroulante des valeurs de l'histogramme
+                    html.Div(children=[
+
+                        html.Label("Type",style=dict(width='5%')),
+
+                        dcc.Dropdown(
+                            id="type-dropdown",
+                            options=[ {'label': i, 'value': i} for i in col_histo
+                                ],
+                            value=col_histo[0],
+                            style=dict(width='50%')
+                        ), # Liste déroulante des valeurs de l'histogramme
+
+                        html.Label("Choose a specific country:",style=dict(width='15%')),
+
+                        dcc.Dropdown(
+                            id="type_coun_histo_dropdown",
+                            options=[ {'label': i, 'value': i} for i in list(full_data["country"].drop_duplicates())
+                                ],
+                            value=None,
+                            style=dict(width='50%')
+                        ), # Liste déroulante des valeurs d'abscisse du diagramme
+                    ],style=dict(display='flex')), 
 
                     html.Label('Year'),
                     
@@ -282,28 +318,30 @@ if __name__ == '__main__':
                     id='histo',
                 ), # (6)
 
-                html.Button(
-                    'Play', 
-                    id='Play', 
-                    n_clicks=0
-                ),
-                html.Button(
-                    'Pause', 
-                    id='Pause', 
-                    n_clicks=0
-                ),
-                html.Div(id='button'), # Bouton pour Play / Pause l'animation de l'histogramme 
+                
+                html.Div(children=[
+
+                    html.Button(
+                        'Play', 
+                        id='Play', 
+                        n_clicks=0
+                    ),
+                    html.Button(
+                        'Pause', 
+                        id='Pause', 
+                        n_clicks=0
+                    ),          
+                ]), # Bouton pour Play / Pause l'animation de l'histogramme 
 
                 dcc.Interval(id='interval',
                     interval=2*1000, # in milliseconds
                     n_intervals=0,
-                    #disabled=True
                 ), # Création de l'interval de données pour l'animation de l'histogramme
             ]),
 
             dcc.Tab(label='World Map', children=[
 
-                html.H2(id='titre_map', children = 'Universities World Map',style={'color': '#335CFF'}), # 2nd partie du Dashboard : données de la World Map 
+                html.H2(id='titre_map', children = f"Universities World Map ({first_map}'s standard)",style={'color': '#335CFF'}), # 3ème partie du Dashboard : données de la World Map 
 
                 html.Label('Type'),
 
@@ -336,22 +374,23 @@ if __name__ == '__main__':
                 ]),
 
                 html.Iframe(id='map', srcDoc=open('map.html','r').read(),width='100%',height='500'), # Generation de la map par lecture d'un fichier map.html,
-                                                                                                    # initialement compilé pour l'affichage      
+                                                                                                     # initialement compilé pour l'affichage      
                 ])
             ])
         ]
     )
 
 @app.callback(
-        [Output(component_id='diagram', component_property='figure'), 
-        Output(component_id='titre_diagram', component_property='children')],
+        [Output(component_id='graph', component_property='figure'), 
+        Output(component_id='titre_graph', component_property='children')],
         Output(component_id='table',component_property='data'),
         [Input(component_id='type_x-dropdown', component_property='value'),
         Input(component_id='type_y-dropdown', component_property='value'),
-        Input(component_id='year-diagram', component_property='value'),] 
+        Input(component_id='year-graph', component_property='value'),
+        Input(component_id='type_country-dropdown', component_property='value')] 
     ) # Appel des données de l'histogramme et des valeurs qui le modifient : l'année et le type de valeurs
     
-def update_diagram(x, y, year):
+def update_diagram(x, y, year,country):
     """
     Retourne le diagramme et tableau en fonction des arguments en paramètre
 
@@ -359,65 +398,83 @@ def update_diagram(x, y, year):
         x : valeur choisie en abscisse
         y : valeur choisie en ordonnée
         year : l'année des données choisies
+        country: un pays spécifique à étudier
 
     Returns:
         Le diagramme de "y" en fonction de "x"
-        Le tableau des 10 Meilleures Universités en fonction de l'année
+        Le tableau des 10 Meilleures Universités en fonction de l'année et en options du pays en question
     
     """
 
-    if  x is None and y is None:
+    if  x is None and y is None and country is None:
         raise PreventUpdate # Si rien n'a été sélectionné, on n'actualise pas l'histogramme
     
     years_diagramm=full_data["year"].unique()
     data_year={ year:full_data.query("year == @year") for year in years_diagramm} # instancie une sous-dataframe ayant en entrée l'année choisie
+    if country is None:
 
-    return px.scatter(
-        data_year[year], # Histogramme de l'année choisie
-        x=x, # type de données voulues en abscisse
-        y=y,
-        color='continent',
-        symbol='continent',
-        color_discrete_map={ # attribue des couleurs fixes au continent
-            "Oceania": "red",
-            "Europe": "green",
-            "Asia": "blue",
-            "Africa": "goldenrod", 
-            "Americas": "orange"
-        }), (f'World Ranking Universities Diagramm ({y} depending on {x})'),tab_year[year].to_dict('records')
-
-
+        return px.scatter(
+            data_year[year], # Histogramme de l'année choisie
+            x=x, # type de données voulues en abscisse
+            y=y,
+            color='continent',
+            symbol='continent',
+            hover_name="University's Name",
+            color_discrete_map={ # attribue des couleurs fixes au continent
+                "Oceania": "red",
+                "Europe": "green",
+                "Asia": "blue",
+                "Africa": "purple", 
+                "Americas": "orange"
+            }), (f'World Ranking Universities Graph ({y} depending on {x})'),tab_year[year].head(10).to_dict('records') #On prend les 10 premières lignes triées
+    
+    else:
+        year_data=data_year[year]
+        year_tab=tab_year[year]
+        return px.scatter(
+            year_data.where(year_data['country']==country).dropna(subset=['country']), # Histogramme de l'année choisie
+            x=x, # type de données voulues en abscisse
+            y=y,
+            hover_name="University's Name"), (f'World Ranking Universities Graph ({y} depending on {x})'), year_tab.where(year_tab['country']==country).dropna(subset=['country']).head(10).to_dict('records')
 
 @app.callback(
         [Output(component_id='histo', component_property='figure'), 
         Output(component_id='titre_histo', component_property='children')],
         [Input(component_id='year-slider', component_property='value'),
-        Input(component_id='type-dropdown', component_property='value')] 
+        Input(component_id='type-dropdown', component_property='value'),
+        Input(component_id='type_coun_histo_dropdown', component_property='value')] 
     ) # Appel des données de l'histogramme et des valeurs qui le modifient : l'année et le type de valeurs
     
-def update_histo(year, type):
+def update_histo(year, type,country):
     """
-    Retourne l'histogramme' en fonction des arguments en paramètre
+    Retourne l'histogramme en fonction des arguments en paramètre
 
     Args:
         year : l'année choisi dans le slider animé
         type : la valeur étudiée choisie
+        country : le pays analysé en question
 
     Returns:
-        L'histogramme de données "year" en fonction de "type"
+        L'histogramme de données de "country" en "year" en fonction de "type"
     
     """
 
-    if  year is None and type is None:
+    if  year is None and type is None and country is None:
         raise PreventUpdate # Si rien n'a été sélectionné, on n'actualise pas l'histogramme
     
     years_map=full_data["year"].unique()
     data_year={ year:full_data.query("year == @year") for year in years_map} # instancie une sous-dataframe ayant en entrée l'année choisie
-
-    return px.histogram(
-        data_year[year], # Histogramme de l'année choisie
-        x=type, # type de données voulues en abscisse
-        nbins=40), (f'World Ranking Universities Histogramm ({type} Rating)')
+    if country is None:
+        return px.histogram(
+            data_year[year], # Histogramme de l'année choisie
+            x=type, # type de données voulues en abscisse
+            nbins=40), (f'World Ranking Universities Histogram ({type} Rating)')
+    else:
+        coun_data=data_year[year]
+        return px.histogram(
+            coun_data.where(coun_data['country']==country).dropna(subset=['country']), # Histogramme de l'année choisie
+            x=type, # type de données voulues en abscisse
+            nbins=40), (f'World Ranking Universities Histogram ({type} Rating)')
 
 @app.callback(  
         Output('year-slider', 'value'),
@@ -429,7 +486,7 @@ def on_tick(n_intervals):
     Actualise l'animation de l'histogramme
 
     Args:
-        n_intervals: la durée de l'intervalle entre les valeurs
+        n_intervals : la durée de l'intervalle entre les valeurs
 
     Returns:
         L'animation de l'histogramme de durée d'intervalle n_intervals
@@ -441,9 +498,9 @@ def on_tick(n_intervals):
     return years[(n_intervals+1)%len(years)] 
 
 @app.callback(
-    Output('interval','disabled'), # Variable du status de l'intervalle
-    Input('Play','n_clicks'),
-    Input('Pause', 'n_clicks') # Variables qui active / désactive l'animation 
+    Output(component_id='interval',component_property='disabled'), # Variable du status de l'intervalle
+    Input(component_id='Play',component_property='n_clicks'),
+    Input(component_id='Pause', component_property='n_clicks') # Variables qui active / désactive l'animation 
 )
 
 def update_status(Play,Pause):
@@ -467,7 +524,8 @@ def update_status(Play,Pause):
         return False # Active l'animation
 
 @app.callback(
-        Output(component_id='map', component_property='srcDoc'), # Valeur de la projection de la map
+        [Output(component_id='map', component_property='srcDoc'),
+        Output(component_id='titre_map', component_property='children')], # Valeur de la projection de la map
         [Input(component_id='map-value', component_property='value'),
         Input(component_id='year-map', component_property='value')] # Variables qui modifient les données de la map
     )
@@ -521,7 +579,7 @@ def update_map(input_value,input_year):
 
     map.save(outfile='map.html') # conversion des données pour actualiser le fichier HTML
 
-    return open('map.html','r').read() # actualisation de la variable modifiée dans le callback()
+    return open('map.html','r').read(),(f"Universities World Map ({input_value}'s standard)") # actualisation de la variable modifiée dans le callback()
 
 #
 # RUN APP
